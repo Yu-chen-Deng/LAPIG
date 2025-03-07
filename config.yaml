@@ -1,0 +1,26 @@
+transfer:
+  infer_steps: 10
+
+morph:
+  orig_width: 256
+  orig_height: 256
+  train_epochs: 100
+  add_scale: 0.4
+  warp_scale: 0.5
+  mult_scale: 0.4
+  add_first: False
+  frame: 120
+
+compensation:
+  fps: 30
+
+procams:
+  surface: 'test'
+  cam_width: 1280
+  cam_height: 720
+  prj_width: 1280
+  prj_height: 720
+  prj_xoffset: 1920
+  delay_frames: 13
+  delay_time: 0.2
+  resize: 256
