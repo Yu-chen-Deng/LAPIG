@@ -48,14 +48,14 @@ PyTorch's implementation of LAPIG.
 4. Start **visdom** by typing the following command in local or server command line:
    `visdom -port 8097`
 5. Once **visdom** is successfully started, visit [`http://localhost:8097`](http://localhost:8097) (train locally) or `http://server:8097` (train remotely).
-6. Open [`run_LAPIG.py`](src/python/run_LAPIG.py) and set which GPUs to use. An example is shown below, we use GPU 0.
+6. Open [`run_LAPIG.py`](run_LAPIG.py) and set which GPUs to use. An example is shown below, we use GPU 0.
    `os.environ['CUDA_VISIBLE_DEVICES'] = '0'`
 7. Build setup and modify `surface` in `config.yaml`:
    ```
    procams:
       surface: 'test' # MODIFY 'test'
    ```
-8. Run [`run_LAPIG.py`](src/python/run_LAPIG.py) to reproduce benchmark results. To visualize the training process in **visdom** (slower), you need to set `plot_on=True`.
+8. Run [`run_LAPIG.py`](run_LAPIG.py) to reproduce benchmark results. To visualize the training process in **visdom** (slower), you need to set `plot_on=True`.
    ```
    python run_LAPIG.py
    ```
