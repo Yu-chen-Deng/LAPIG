@@ -68,9 +68,10 @@ If you use the dataset or this code, please consider citing our work:
 ```
 @ARTICLE{Deng2025LAPIG,
   author  = {Deng, Yuchen and Ling, Haibin and Huang, Bingyao},
-  journal = {IEEE Transactions on Visualization and Computer Graphics (in press)},
+  journal = {IEEE Transactions on Visualization and Computer Graphics},
   title   = {LAPIG: Language Guided Projector Image Generation with Surface Adaptation and Stylization},
   year    = {2025},
+  doi     = {10.1109/TVCG.2025.3549859}}
 }
 ```
 
