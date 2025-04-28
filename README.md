@@ -37,23 +37,20 @@ PyTorch's implementation of LAPIG.
    cd LAPIG
    ```
 
-3. Download LAPIG [sampling images (~109.7 MB)][8] and extract to [`data/CMP/`](data/CMP/), the file like this:
+3. Download LAPIG [sampling images (~25.8 MB)][8] and extract to [`data/Compen+Relit/`](data/Compen+Relit/), the file like this:
    ```
-   data/CMP
+   data/Compen+Relit
     |
     |_ /prj
-    |
-    |_ /desired
    ```
 4. Start **visdom** by typing the following command in local or server command line:
-   `visdom -port 8097`
+   `visdom -port 8097` (or directly run `run_LAPIG.py`)
 5. Once **visdom** is successfully started, visit [`http://localhost:8097`](http://localhost:8097) (train locally) or `http://server:8097` (train remotely).
 6. Open [`run_LAPIG.py`](run_LAPIG.py) and set which GPUs to use. An example is shown below, we use GPU 0.
    `os.environ['CUDA_VISIBLE_DEVICES'] = '0'`
 7. Build setup and modify `surface` in `config.yaml`:
    ```
-   procams:
-      surface: 'test' # MODIFY 'test'
+   setup_name: 'test' # MODIFY 'test'
    ```
 8. Run [`run_LAPIG.py`](run_LAPIG.py) to reproduce benchmark results. To visualize the training process in **visdom** (slower), you need to set `plot_on=True`.
    ```
@@ -71,7 +68,7 @@ If you use the dataset or this code, please consider citing our work:
   journal = {IEEE Transactions on Visualization and Computer Graphics},
   title   = {LAPIG: Language Guided Projector Image Generation with Surface Adaptation and Stylization},
   year    = {2025},
-  doi     = {10.1109/TVCG.2025.3549859}}
+  doi     = {10.1109/TVCG.2025.3549859}
 }
 ```
 

@@ -1,3 +1,5 @@
+# Author: Bingyao Huang (https://github.com/BingyaoHuang/SPAA/)
+
 '''
 Useful helper functions
 '''
@@ -531,7 +533,7 @@ def init_prj_window(prj_w, prj_h, val, offset=(3840, 0)):
 
 def init_cam(cam_raw_sz=None):
     if sys.platform == 'win32':
-        #相机初始化，我对相机进行初始化，调用第二个相机来拍摄
+        # Initialize camera
         cam = cv.VideoCapture(0, cv.CAP_DSHOW)  # windows only to get rid of the annoying warning
     else:
         cam = cv.VideoCapture(0)

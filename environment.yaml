@@ -1,10 +1,11 @@
 name: LAPIG
 channels:
 - defaults
-- anaconda/cloud/conda-forge
+- nvidia
 - pytorch
 - conda-forge
 dependencies:
+- python=3.10.4
 - pip=24.0
 - pytorch-cuda=12.1
 - brotli-python=1.0.9
@@ -19,11 +20,15 @@ dependencies:
   - tifffile==2024.7.2
   - tensorflow==2.10.1
   - visdom==0.2.4
-  - torchvision==0.18.1+cu121
+  - torchvision==0.18.1
   - python-dateutil==2.9.0.post0
   - opencv-contrib-python==4.9.0.80
   - pyqt5==5.15.10
-  - torchaudio==2.3.1+cu121
+  - pandas==2.2.2
+  - scikit-image==0.24.0
+  - scipy==1.14.0
+  - matplotlib==3.9.1
+  - torchaudio==2.3.1
   - watchdog==4.0.1
   - imageio==2.34.2
   - transformers==4.42.4

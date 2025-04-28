@@ -1,9 +1,14 @@
+# Author: Bingyao Huang (https://github.com/BingyaoHuang/SPAA/)
+
 import numpy as np
 import math
 import cv2 as cv
 from skimage.filters import threshold_multiotsu
 from scipy.interpolate import griddata
 from PIL import Image
+
+from scipy.spatial import Delaunay
+from scipy.interpolate import LinearNDInterpolator
 
 
 def threshold_im(im_in, compensation=False):
@@ -12,13 +17,17 @@ def threshold_im(im_in, compensation=False):
         # get rid of out of range values
         im_in = np.clip(im_in, 0, 1)
 
-        im_in = cv.cvtColor(im_in, cv.COLOR_RGB2GRAY)  # !!very important, result of COLOR_RGB2GRAY is different from COLOR_BGR2GRAY
-        if im_in.dtype == 'float32':
+        im_in = cv.cvtColor(
+            im_in, cv.COLOR_RGB2GRAY
+        )  # !!very important, result of COLOR_RGB2GRAY is different from COLOR_BGR2GRAY
+        if im_in.dtype == "float32":
             im_in = np.uint8(im_in * 255)
         if compensation:
             # _, im_mask = cv.threshold(cv.GaussianBlur(im_in, (5, 5), 0), 0, 1, cv.THRESH_BINARY + cv.THRESH_OTSU)
             levels = 4
-            thresholds = threshold_multiotsu(cv.GaussianBlur(im_in, (3, 3), 1.5), levels)
+            thresholds = threshold_multiotsu(
+                cv.GaussianBlur(im_in, (3, 3), 1.5), levels
+            )
 
             # Quantized image
             im_mask = np.digitize(im_in, bins=thresholds)
@@ -36,19 +45,28 @@ def threshold_im(im_in, compensation=False):
         im_mask = im_in
 
     # find the largest contour by area then convert it to convex hull
-    contours, hierarchy = cv.findContours(np.uint8(im_mask), cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+    contours, hierarchy = cv.findContours(
+        np.uint8(im_mask), cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE
+    )
     if compensation:
         max_contours = max(contours, key=cv.contourArea)
         hulls = cv.convexHull(max(contours, key=cv.contourArea))
     else:
-        max_contours = np.concatenate(contours)  # instead of use the largest area, we use them all
+        max_contours = np.concatenate(
+            contours
+        )  # instead of use the largest area, we use them all
         hulls = cv.convexHull(max_contours)
     im_roi = cv.fillConvexPoly(np.zeros_like(im_mask, dtype=np.uint8), hulls, True) > 0
 
     # also calculate the bounding box
     # bbox = cv.boundingRect(max(contours, key=cv.contourArea))
     bbox = cv.boundingRect(max_contours)
-    corners = [[bbox[0], bbox[1]], [bbox[0] + bbox[2], bbox[1]], [bbox[0] + bbox[2], bbox[1] + bbox[3]], [bbox[0], bbox[1] + bbox[3]]]
+    corners = [
+        [bbox[0], bbox[1]],
+        [bbox[0] + bbox[2], bbox[1]],
+        [bbox[0] + bbox[2], bbox[1] + bbox[3]],
+        [bbox[0], bbox[1] + bbox[3]],
+    ]
 
     # normalize to (-1, 1) following pytorch grid_sample coordinate system
     h = im_in.shape[0]
@@ -66,7 +84,7 @@ def im2double(im, im_type=None):
     Convert image to double precision.
     """
     if im_type is not None:
-        assert im_type == 'indexed', 'Invalid type. Only "indexed" is supported.'
+        assert im_type == "indexed", 'Invalid type. Only "indexed" is supported.'
 
     if im.dtype == np.float64:
         return im
@@ -90,10 +108,14 @@ def im2double(im, im_type=None):
         if im_type is None:
             return (im.astype(np.float64) + 32768) / 65535
         else:
-            raise ValueError('Invalid indexed image type. Only uint8, uint16, double, or logical are supported.')
+            raise ValueError(
+                "Invalid indexed image type. Only uint8, uint16, double, or logical are supported."
+            )
 
     else:
-        raise ValueError('Invalid image type. Only double, logical, uint8, uint16, int16, single are supported.')
+        raise ValueError(
+            "Invalid image type. Only double, logical, uint8, uint16, int16, single are supported."
+        )
 
 
 def robust_decode(im, im_cmp, im_d, im_g, m):
@@ -196,7 +218,9 @@ def gray2dec(im_gray_code):
 def crop_and_resize(imPrj, prjW, prjH, outSize):
     if True:  # Condition for cropAndResize (add your condition here if needed)
         offset = np.floor((prjW - prjH) / 2).astype(int)
-        imPrj = np.array(Image.fromarray(imPrj[:, offset:prjW - offset - 1, :]).resize(outSize))
+        imPrj = np.array(
+            Image.fromarray(imPrj[:, offset : prjW - offset - 1, :]).resize(outSize)
+        )
         imPrj = np.uint8(imPrj)
 
     return imPrj
@@ -229,12 +253,19 @@ def create_gray_code_pattern(w, h):
     im_prj[h_idx + 1] = 1 - im_h_gray
 
     # convert to 3 channel and float32
-    im_prj = np.broadcast_to(memoryview(im_prj[..., None]), (*im_prj.shape, 3)).astype(np.float32)
+    im_prj = np.broadcast_to(memoryview(im_prj[..., None]), (*im_prj.shape, 3)).astype(
+        np.float32
+    )
     return im_prj
 
 
 def decode_gray_code_pattern(im_sl, prj_h, prj_w, threshes=None):
-    n_imgs, cam_h, cam_w, _, = im_sl.shape  # N, h, w, c
+    (
+        n_imgs,
+        cam_h,
+        cam_w,
+        _,
+    ) = im_sl.shape  # N, h, w, c
     v_bits, h_bits, v_offset, h_offset = get_gray_code_bits_and_offset(prj_w, prj_h)
 
     # convert to grayscale images
@@ -246,7 +277,10 @@ def decode_gray_code_pattern(im_sl, prj_h, prj_w, threshes=None):
     # Find direct light mask using Nayar TOG'06 method (also see Moreno & Taubin 3DV'12). We need at
     # least two complementary images, but more images are better. We use the 3rd and 2nd highest
     # frequencies (8 images) to estimate direct and global components as suggested by Moreno & Taubin 3DV'12
-    high_freq_idx = [*range(2 * v_bits - 4, 2 * v_bits), *range(2 * v_bits + 2 * h_bits - 4, 2 * v_bits + 2 * h_bits)]
+    high_freq_idx = [
+        *range(2 * v_bits - 4, 2 * v_bits),
+        *range(2 * v_bits + 2 * h_bits - 4, 2 * v_bits + 2 * h_bits),
+    ]
     im_max = im_sl_gray[high_freq_idx].max(axis=0)
     im_min = im_sl_gray[high_freq_idx].min(axis=0)
 
@@ -260,12 +294,18 @@ def decode_gray_code_pattern(im_sl, prj_h, prj_w, threshes=None):
         m = threshes.m
 
     # get direct light mask
-    im_diff = cv.normalize(cv.GaussianBlur(im_max - im_min, (3, 3), sigmaX=1.5), None, 0, 255, cv.NORM_MINMAX).astype(np.uint8)
+    im_diff = cv.normalize(
+        cv.GaussianBlur(im_max - im_min, (3, 3), sigmaX=1.5),
+        None,
+        0,
+        255,
+        cv.NORM_MINMAX,
+    ).astype(np.uint8)
     # th, im_mask = cv.threshold(im_diff, 0, 1, cv.THRESH_BINARY + cv.THRESH_OTSU)
     im_mask = (im_diff > threshes.t * 255).astype(np.float32)
 
     im_d = ((im_max - im_min) / (1 - b)).clip(max=1.0)  # direct light image
-    im_g = 2 * (im_min - b * im_max) / (1 - b ** 2)  # indirect (global) light image
+    im_g = 2 * (im_min - b * im_max) / (1 - b**2)  # indirect (global) light image
 
     im_d[im_g < 0] = im_max[im_g < 0]
     im_g = im_g.clip(min=0.0)
@@ -281,7 +321,11 @@ def decode_gray_code_pattern(im_sl, prj_h, prj_w, threshes=None):
     im_v_code = robust_decode(im_v, im_v_cmp, im_d, im_g, m)
     im_h_code = robust_decode(im_h, im_h_cmp, im_d, im_g, m)
 
-    im_uncertain_mask = np.any(np.isnan(im_v_code), axis=0) | np.any(np.isnan(im_h_code), axis=0) | (np.abs(im_max - im_min) < t)
+    im_uncertain_mask = (
+        np.any(np.isnan(im_v_code), axis=0)
+        | np.any(np.isnan(im_h_code), axis=0)
+        | (np.abs(im_max - im_min) < t)
+    )
     im_v_code[:, im_uncertain_mask] = 0
     im_h_code[:, im_uncertain_mask] = 0
 
@@ -296,33 +340,82 @@ def decode_gray_code_pattern(im_sl, prj_h, prj_w, threshes=None):
     im_cam_x, im_cam_y = np.meshgrid(np.arange(cam_w), np.arange(cam_h))
     cam_pts = np.vstack((im_cam_x.ravel(), im_cam_y.ravel())).T
 
-    im_invalid_idx = (im_d < m) | (im_prj_x < 0) | (im_prj_x >= prj_w) | (im_prj_y < 0) | (im_prj_y >= prj_h)
+    im_invalid_idx = (
+        (im_d < m)
+        | (im_prj_x < 0)
+        | (im_prj_x >= prj_w)
+        | (im_prj_y < 0)
+        | (im_prj_y >= prj_h)
+    )
     cam_pts = cam_pts[~im_invalid_idx.ravel(), :].astype(np.float32)
     prj_pts = prj_pts[~im_invalid_idx.ravel(), :].astype(np.float32)
 
     return cam_pts, prj_pts, im_min, im_max, im_mask
 
 
-def warp_imgs(im_src, src_xy, dst_xy, dst_w, dst_h, outSize):
-    # Warp images using matched 2d points in src_xy and dst_xy
+# def warp_imgs(im_src, src_xy, dst_xy, dst_w, dst_h, outSize):
+#     # Warp images using matched 2d points in src_xy and dst_xy
 
-    # interpolate a dense sampling grid using griddata
+#     # interpolate a dense sampling grid using griddata
+#     dst_x_dense, dst_y_dense = np.meshgrid(np.arange(dst_w), np.arange(dst_h))
+#     src_xy_dense = griddata(dst_xy, src_xy, (dst_x_dense, dst_y_dense), method='linear').astype(np.float32)
+#     x_map, y_map = src_xy_dense[..., 0], src_xy_dense[..., 1]
+
+#     if im_src.ndim == 4:
+#         n, h, w, c = im_src.shape
+#         im_dst = np.empty((n, dst_h, dst_w, c), dtype=im_src.dtype)
+#         im_dst_resize = np.empty((n, outSize[0], outSize[1], c), dtype=im_src.dtype)
+#         # warp all images
+#         for i in range(n):
+#             im_dst[i] = cv.remap(im_src[i], x_map, y_map, interpolation=cv.INTER_LINEAR)
+#             im_dst_resize[i] = crop_and_resize(im_dst[i], dst_w, dst_h, outSize)
+
+
+#     else:
+#         im_dst = cv.remap(im_src, x_map, y_map, interpolation=cv.INTER_LINEAR)
+
+#     return im_dst_resize
+
+
+def warp_imgs(im_src, src_xy, dst_xy, dst_w, dst_h, outSize, tri=None):
     dst_x_dense, dst_y_dense = np.meshgrid(np.arange(dst_w), np.arange(dst_h))
-    src_xy_dense = griddata(dst_xy, src_xy, (dst_x_dense, dst_y_dense), method='linear').astype(np.float32)
+    dst_points = np.column_stack((dst_x_dense.ravel(), dst_y_dense.ravel()))
+
+    if tri is None:
+        tri = Delaunay(dst_xy)
+
+    interpolator = LinearNDInterpolator(tri, src_xy)
+    src_xy_dense = interpolator(dst_points).reshape(dst_h, dst_w, 2).astype(np.float32)
+
     x_map, y_map = src_xy_dense[..., 0], src_xy_dense[..., 1]
+
+    x_map_umat = cv.UMat(x_map)
+    y_map_umat = cv.UMat(y_map)
 
     if im_src.ndim == 4:
         n, h, w, c = im_src.shape
-        im_dst = np.empty((n, dst_h, dst_w, c), dtype=im_src.dtype)
         im_dst_resize = np.empty((n, outSize[0], outSize[1], c), dtype=im_src.dtype)
-        # warp all images
+
         for i in range(n):
-            im_dst[i] = cv.remap(im_src[i], x_map, y_map, interpolation=cv.INTER_LINEAR)
-            im_dst_resize[i] = crop_and_resize(im_dst[i], dst_w, dst_h, outSize)
+            im_src_umat = cv.UMat(im_src[i])
 
+            im_dst_umat = cv.remap(
+                im_src_umat, x_map_umat, y_map_umat, interpolation=cv.INTER_LINEAR
+            )
 
+            im_dst = im_dst_umat.get()
+
+            im_dst_resize[i] = crop_and_resize(im_dst, dst_w, dst_h, outSize)
     else:
-        im_dst = cv.remap(im_src, x_map, y_map, interpolation=cv.INTER_LINEAR)
+        im_src_umat = cv.UMat(im_src)
+
+        im_dst_umat = cv.remap(
+            im_src_umat, x_map_umat, y_map_umat, interpolation=cv.INTER_LINEAR
+        )
+
+        im_dst = im_dst_umat.get()
+
+        im_dst_resize = crop_and_resize(im_dst, dst_w, dst_h, outSize)
 
     return im_dst_resize
 

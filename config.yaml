@@ -1,3 +1,7 @@
+AUTO_RUN_VISDOM: True
+
+setup_name: 'test'
+
 transfer:
   infer_steps: 10
 
@@ -9,17 +13,16 @@ morph:
   warp_scale: 0.5
   mult_scale: 0.4
   add_first: False
-  frame: 120
+  frame: 60
 
 compensation:
-  fps: 30
+  fps: 60
 
 procams:
-  surface: 'test'
   cam_width: 1280
   cam_height: 720
-  prj_width: 1280
-  prj_height: 720
+  prj_width: 800
+  prj_height: 600
   prj_xoffset: 1920
   delay_frames: 13
   delay_time: 0.2
