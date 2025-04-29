@@ -115,9 +115,10 @@ def main():
             output_dir = join(
                 "./data/LGST",
                 surface,
-                "styl_surf.png",
             )
-            images[0].save(output_dir)
+            if not os.path.exists(output_dir):
+                os.makedirs(output_dir)
+            images[0].save(join(output_dir, "styl_surf.png"))
 
             styl_surf = PIL2Tensor4D(images[0], device=device)
 

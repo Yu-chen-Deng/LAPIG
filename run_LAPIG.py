@@ -1,7 +1,7 @@
 import os
 from os.path import join
 
-from utils.utils_LAPIG import load_config, get_config, check_and_start_visdom, execute
+from utils_LAPIG import load_config, get_config, check_and_start_visdom, execute
 
 if __name__ == "__main__":
     execute("utils/register_utils_LAPIG.py")
